@@ -65,6 +65,8 @@
 
   /* ---------- table ---------- */
   .tablewrap{border:1px solid var(--border);border-radius:12px;overflow:auto;background:var(--bg2)}
+  .msort{display:none}
+  .msort select{width:100%;font-size:13px}
   table{width:100%;border-collapse:collapse;min-width:1080px}
   thead th{position:sticky;top:0;background:var(--panel);z-index:5;font-size:12.5px;color:var(--text-dim);font-weight:700;padding:11px 10px;text-align:center;border-bottom:1px solid var(--border);white-space:nowrap;user-select:none}
   thead th.sortable{cursor:pointer}
@@ -156,9 +158,10 @@
     .quota-chip{font-size:11px;padding:5px 9px;white-space:nowrap}
     .gear-btn{font-size:15px;padding:5px 7px}
     .hdr-right .tbtn{padding:6px 9px;font-size:12px;white-space:nowrap}
-    nav{order:3;width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:2px;scrollbar-width:none;margin:0 -4px;padding:0 4px}
-    nav::-webkit-scrollbar{display:none}
-    nav button{flex:none;padding:8px 11px;font-size:13.5px}
+    nav{order:3;width:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
+    nav button{justify-content:center;padding:9px 2px;font-size:12.5px;gap:3px}
+    nav button .ico{display:none}
+    nav button.active{border-radius:8px;background:var(--panel2)}
     .searchbar .kw{min-width:0;width:100%;max-width:none;flex:1 1 100%}
     .filters{width:100%}
     .filters select{flex:1;min-width:0}
@@ -169,6 +172,28 @@
     .stat .val{font-size:19px}
     .toolbar .left,.toolbar .right{width:100%}
     .empty{padding:46px 12px}
+
+    /* ---- 표 → 카드형 (v4.8): 옆으로 밀지 않고 한눈에 ---- */
+    .msort{display:block;margin:0 0 10px}
+    .tablewrap{border:none;background:transparent;overflow:visible}
+    .tablewrap table{min-width:0;display:block;width:100%}
+    .tablewrap thead{display:none}
+    .tablewrap tbody{display:flex;flex-direction:column;gap:12px}
+    .tablewrap tbody tr{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:10px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:12px;align-items:start}
+    .tablewrap tbody tr:hover{background:var(--bg2)}
+    .tablewrap tbody td{display:block;border-bottom:none;padding:0;font-size:13px;text-align:center}
+    .tablewrap tbody td[data-th]::before{content:attr(data-th);display:block;font-size:10.5px;font-weight:600;color:var(--text-faint);margin-bottom:3px}
+    .tablewrap tbody td:only-child{grid-column:1/-1}
+    .tablewrap tbody td.m-thumb{grid-column:1/-1}
+    .tablewrap td.m-thumb .thumb{width:100%;height:auto;aspect-ratio:16/9}
+    .tablewrap tbody td.vtitle{grid-column:1/-1;max-width:none;text-align:left}
+    .tablewrap tbody td.m-face{grid-column:1/-1;text-align:left}
+    .tablewrap tbody td.m-face img{width:44px;height:44px}
+    .tablewrap tbody td.m-check{position:absolute;top:18px;left:18px;z-index:6;background:rgba(0,0,0,.55);border-radius:8px;padding:7px;line-height:0}
+    .tablewrap tbody td.m-del{position:absolute;top:16px;right:16px;z-index:6;background:rgba(0,0,0,.55);border-radius:8px}
+    .tablewrap tbody td.m-act{grid-column:1/-1}
+    .tablewrap tbody td.m-act .tbtn{width:100%;justify-content:center}
+    .tablewrap tbody td .sub{max-width:none}
   }
 
   /* ---------- Worst 등급 & 라이트 테마 ---------- */
@@ -291,14 +316,14 @@
 <header>
   <div class="logo"><span class="tri">▲</span>DIRECTOR<b>&nbsp;YOU&nbsp;LAB</b><small>Media Trend Research</small></div>
   <nav id="mainNav">
-    <button data-tab="videos" class="active">🔍 영상 찾기</button>
-    <button data-tab="radar">🔥 떡상 레이더</button>
-    <button data-tab="craft">✍️ 제작 가이드</button>
-    <button data-tab="mych">📺 내 채널</button>
-    <button data-tab="channels">📡 채널 찾기</button>
-    <button data-tab="analyze">📊 채널 분석</button>
-    <button data-tab="saved">📁 수집한 영상 <span id="savedCount" style="color:var(--green-soft)"></span></button>
-    <button data-tab="my">👤 마이페이지</button>
+    <button data-tab="videos" class="active"><span class="ico">🔍</span>영상 찾기</button>
+    <button data-tab="radar"><span class="ico">🔥</span>떡상 레이더</button>
+    <button data-tab="craft"><span class="ico">✍️</span>제작 가이드</button>
+    <button data-tab="mych"><span class="ico">📺</span>내 채널</button>
+    <button data-tab="channels"><span class="ico">📡</span>채널 찾기</button>
+    <button data-tab="analyze"><span class="ico">📊</span>채널 분석</button>
+    <button data-tab="saved"><span class="ico">📁</span>수집한 영상 <span id="savedCount" style="color:var(--green-soft)"></span></button>
+    <button data-tab="my"><span class="ico">👤</span>마이페이지</button>
   </nav>
   <div class="hdr-right">
     <span class="quota-chip">오늘 사용량 <b id="quotaUsed">0</b> / 10,000</span>
@@ -787,8 +812,9 @@
 <script>
 "use strict";
 /* ================= 버전 & 업데이트 내역 ================= */
-const APP_VERSION = '4.7';
+const APP_VERSION = '4.8';
 const CHANGELOG = [
+  {v:'4.8', d:'2026.07.30', t:['📱 모바일 카드형 결과 보기 — 옆으로 밀며 보던 결과 표(기여도·성과도·댓글 등)를 폰에서는 카드 형태로 변환: 썸네일 크게 + 지표는 라벨과 함께 3열로 한눈에','상단 메뉴도 좌우 스크롤 대신 2줄 배치로 변경 (밀지 않고 바로 탭)','모바일 전용 정렬 셀렉트 추가 — 열 제목을 누를 수 없는 화면에서도 조회수·기여도·성과도 순 정렬 가능']},
   {v:'4.7', d:'2026.07.30', t:['📱 모바일 반응형 수정 — 폰 화면에서 상단 메뉴가 세로로 깨지던 문제 해결: 로고+사용량은 첫 줄, 메뉴는 좌우로 스크롤되는 한 줄 바로 정리','검색창·필터·통계 카드·채널 헤더·상세 박스도 좁은 화면에 맞게 자동 정렬']},
   {v:'4.6', d:'2026.07.30', t:['☁️ 기기 간 자동 동기화 — GitHub 비공개 Gist를 개인 클라우드로 사용해 수집함·검색 기록·채널 분석 저장을 모든 기기에서 자동으로 이어감 (마이페이지에서 연결)','변경 후 30초 내 자동 업로드, 다른 기기에서 열면 자동 다운로드 · API 키는 보안상 동기화 제외(기기마다 1회 입력)']},
   {v:'4.5', d:'2026.07.30', t:['등록 채널 칩에 💾 표시 — 저장된 분석이 있어 무료로 열리는 채널을 한눈에 구분','저장 데이터가 없는 채널은 안내 문구가 명확해지고, 취소 시 직전에 보던 분석 화면을 자동 복원','구버전에서 분석했던 마지막 채널 데이터를 새 저장소로 자동 이관']},
@@ -1327,12 +1353,68 @@ function bindSorting() {
         state.sort[tbl.id] = {key, dir: (cur && cur.key===key && cur.dir===-1) ? 1 : -1};
         tbl.querySelectorAll('th').forEach(h => h.classList.remove('sorted'));
         th.classList.add('sorted');
-        if (tbl.id==='vTable') renderVideos();
-        else if (tbl.id==='cTable') renderChannels();
-        else if (tbl.id==='aTable') renderAnalyzedVideos();
-        else if (tbl.id==='sTable') renderSaved();
+        rerenderTable(tbl.id);
       });
     });
+  });
+}
+function rerenderTable(id) {
+  if (id==='vTable') renderVideos();
+  else if (id==='cTable') renderChannels();
+  else if (id==='aTable') renderAnalyzedVideos();
+  else if (id==='sTable') renderSaved();
+}
+
+/* ===== 모바일 카드형 표 (v4.8) ===== */
+/* 각 셀에 열 제목을 라벨로 붙여, 좁은 화면에서 표를 카드로 변환할 수 있게 함 */
+function labelizeTables() {
+  document.querySelectorAll('.tablewrap table').forEach(tb => {
+    const ths = [...tb.querySelectorAll('thead th')].map(th =>
+      th.textContent.replace('⇅','').replace(/\s+/g,' ').trim());
+    tb.querySelectorAll('tbody tr').forEach(tr => {
+      const tds = [...tr.children];
+      if (tds.length < 2) return; // 빈 상태 행
+      tds.forEach((td, i) => {
+        if (td.dataset.mDone) return;
+        td.dataset.mDone = '1';
+        const h = ths[i] || '';
+        if (h === '썸네일') td.classList.add('m-thumb');
+        else if (h === '프로필') td.classList.add('m-face');
+        else if (h === '선택') td.classList.add('m-check');
+        else if (h === '삭제') td.classList.add('m-del');
+        else if (h === '분석') td.classList.add('m-act');
+        else if (td.classList.contains('vtitle')) { /* 제목: 라벨 없음 */ }
+        else if (h) td.dataset.th = h;
+      });
+    });
+  });
+}
+new MutationObserver(() => labelizeTables()).observe(document.body, {childList: true, subtree: true});
+
+/* 모바일에서는 열 제목 클릭이 불가능하므로 정렬 셀렉트 제공 */
+function buildMobileSort() {
+  document.querySelectorAll('.tablewrap table').forEach(tbl => {
+    const sortables = [...tbl.querySelectorAll('th.sortable')];
+    if (!sortables.length) return;
+    const wrap = tbl.closest('.tablewrap');
+    if (!wrap || (wrap.previousElementSibling && wrap.previousElementSibling.classList.contains('msort'))) return;
+    const bar = document.createElement('div');
+    bar.className = 'msort';
+    const opts = sortables.map(th => {
+      const label = th.textContent.replace('⇅','').replace(/\s+/g,' ').trim();
+      const k = th.dataset.sort;
+      const isDate = ['published','created','savedAt'].includes(k);
+      return `<option value="${k}:-1">${label} ${isDate?'최신순':'높은순'}</option>` +
+             `<option value="${k}:1">${label} ${isDate?'오래된순':'낮은순'}</option>`;
+    }).join('');
+    bar.innerHTML = `<select><option value="">↕ 정렬: 기본 순서</option>${opts}</select>`;
+    bar.querySelector('select').addEventListener('change', e => {
+      const v = e.target.value;
+      if (!v) delete state.sort[tbl.id];
+      else { const p = v.split(':'); state.sort[tbl.id] = {key: p[0], dir: +p[1]}; }
+      rerenderTable(tbl.id);
+    });
+    wrap.parentNode.insertBefore(bar, wrap);
   });
 }
 /* ================= 떡상 레이더 ================= */
@@ -3066,6 +3148,8 @@ state.saved.forEach(s => {           // 구버전 데이터 마이그레이션
 });
 folders = [...new Set([...folders, ...state.saved.map(s => s.folder)])];
 bindSorting();
+buildMobileSort();
+labelizeTables();
 renderRegChips();
 persistSaved();
 renderSaved();
