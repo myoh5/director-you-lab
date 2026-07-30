@@ -604,6 +604,31 @@
         <div class="myrow"><span>데이터 초기화</span><button class="tbtn" onclick="resetAll()">전체 초기화</button></div>
       </div>
       <div class="mycard">
+        <h3>☁️ 기기 간 자동 동기화</h3>
+        <div id="syncOff">
+          <p style="font-size:12.5px;color:var(--text-dim);line-height:1.7;margin-bottom:10px">GitHub 비공개 저장소(Gist)를 개인 클라우드로 사용해, 수집함·검색 기록·채널 분석 저장을 <b style="color:var(--text)">모든 기기에서 자동으로 이어갑니다</b>. 각 기기에서 한 번만 연결하면 됩니다.</p>
+          <p style="font-size:12px;color:var(--text-faint);line-height:1.8;margin-bottom:8px">
+            ① <a href="https://github.com/settings/tokens/new?scopes=gist&description=DIRECTOR-YOU-LAB-sync" target="_blank" style="color:var(--blue);text-decoration:underline">토큰 만들기 바로가기</a> (gist 권한이 미리 체크된 화면이 열려요)<br>
+            ② Expiration을 <b>No expiration</b>으로 바꾸고 아래 <b>Generate token</b> 클릭<br>
+            ③ 생성된 <code style="color:var(--green-soft)">ghp_...</code> 토큰을 복사해 아래에 붙여넣고 연결
+          </p>
+          <div class="keyrow" style="margin-top:8px">
+            <input id="gistToken" placeholder="ghp_... 토큰 붙여넣기" autocomplete="off">
+            <button onclick="connectSync()">연결</button>
+          </div>
+          <div id="syncMsg" style="font-size:12.5px;margin-top:8px;min-height:16px"></div>
+        </div>
+        <div id="syncOn" style="display:none">
+          <div class="myrow"><span>상태</span><b style="color:var(--green-soft)">연결됨 ✓</b></div>
+          <div class="myrow"><span>마지막 동기화</span><b id="syncLast">—</b></div>
+          <div class="myrow"><span></span><span style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="tbtn" onclick="syncPush(true)">⬆ 지금 올리기</button>
+            <button class="tbtn" onclick="syncPull(true)">⬇ 가져오기</button>
+            <button class="tbtn" onclick="disconnectSync()">해제</button></span></div>
+          <p style="font-size:11.5px;color:var(--text-faint);margin-top:8px;line-height:1.7">변경 후 30초 안에 자동 업로드되고, 다른 기기에서 앱을 열면 자동으로 내려받습니다. API 키는 보안을 위해 동기화에서 제외됩니다(기기마다 1회 입력).</p>
+        </div>
+      </div>
+      <div class="mycard">
         <h3>🧾 버전 정보</h3>
         <div class="myrow"><span>현재 버전</span><b id="myVer">—</b></div>
         <div id="changelog" style="margin-top:12px"></div>
@@ -738,8 +763,9 @@
 <script>
 "use strict";
 /* ================= 버전 & 업데이트 내역 ================= */
-const APP_VERSION = '4.5';
+const APP_VERSION = '4.6';
 const CHANGELOG = [
+  {v:'4.6', d:'2026.07.30', t:['☁️ 기기 간 자동 동기화 — GitHub 비공개 Gist를 개인 클라우드로 사용해 수집함·검색 기록·채널 분석 저장을 모든 기기에서 자동으로 이어감 (마이페이지에서 연결)','변경 후 30초 내 자동 업로드, 다른 기기에서 열면 자동 다운로드 · API 키는 보안상 동기화 제외(기기마다 1회 입력)']},
   {v:'4.5', d:'2026.07.30', t:['등록 채널 칩에 💾 표시 — 저장된 분석이 있어 무료로 열리는 채널을 한눈에 구분','저장 데이터가 없는 채널은 안내 문구가 명확해지고, 취소 시 직전에 보던 분석 화면을 자동 복원','구버전에서 분석했던 마지막 채널 데이터를 새 저장소로 자동 이관']},
   {v:'4.4', d:'2026.07.30', t:['채널 분석 저장 기능 — 분석한 채널(최대 10개)은 저장되어, 등록 채널 칩을 클릭하면 사용량 차감 없이 즉시 표시','저장된 분석에는 기준 시각이 표시되고 🔄 최신화 버튼을 눌렀을 때만 사용량(약 4)이 차감','채널 찾기·상세 창의 [채널 분석] 버튼도 저장된 데이터가 있으면 재조회 없이 바로 열림']},
   {v:'4.3', d:'2026.07.30', t:['떡상 썸네일 벤치마킹을 최근 1개월 이내 게시된 롱폼 영상으로 한정 — 지금 통하는 썸네일 문법만 참고하도록 개선']},
@@ -1512,6 +1538,7 @@ function persistChA() {
     }
     localStorage.setItem('vf_ch_analyses', JSON.stringify(chAnalyses));
   } catch(e) { chAnalyses = {}; }
+  scheduleSync();
 }
 function renderCachedAnalysis(id) {
   const c = chAnalyses[id];
@@ -1714,10 +1741,11 @@ function searchFromChip(el) {
 
 /* ================= 영상 수집 (보관함 + 폴더) ================= */
 let folders = JSON.parse(localStorage.getItem('vf_folders') || '["Default"]');
-function persistFolders(){ localStorage.setItem('vf_folders', JSON.stringify(folders)); }
+function persistFolders(){ localStorage.setItem('vf_folders', JSON.stringify(folders)); scheduleSync(); }
 function persistSaved() {
   localStorage.setItem(LS.saved, JSON.stringify(state.saved));
   $('savedCount').textContent = state.saved.length ? `(${state.saved.length})` : '';
+  scheduleSync();
 }
 function toggleAllChecks() {
   const chks = [...document.querySelectorAll('.vchk')];
@@ -1945,6 +1973,7 @@ function logUsage(service, detail) {
   const h = JSON.parse(localStorage.getItem('vf_history') || '[]');
   h.unshift({s: service, d: detail, t: new Date().toISOString()});
   localStorage.setItem('vf_history', JSON.stringify(h.slice(0, 300)));
+  scheduleSync();
 }
 function renderMyPage() {
   $('myKey').textContent = API_KEY ? API_KEY.slice(0,6) + '••••••' + API_KEY.slice(-4) : '미등록';
@@ -1971,6 +2000,7 @@ function renderMyPage() {
   const cf = localStorage.getItem('vf_confirm') !== '0';
   $('cfOn').classList.toggle('primary', cf);
   $('cfOff').classList.toggle('primary', !cf);
+  renderSyncUI();
   $('myVer').textContent = 'v' + APP_VERSION;
   $('changelog').innerHTML = CHANGELOG.map(c => `
     <div style="margin-bottom:12px">
@@ -2143,6 +2173,7 @@ function persistSnaps() {
     }
     localStorage.setItem('vf_snap', JSON.stringify(snaps));
   } catch(e) { snaps = {}; }
+  scheduleSync();
 }
 function addSnap(id, views, likes) {
   if (views == null || isNaN(views)) return;
@@ -2843,6 +2874,106 @@ function closeGuide(){ $('guideModal').classList.remove('open'); }
 $('guideModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeGuide(); });
 $('confirmModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
 
+/* ================= 기기 간 자동 동기화 (GitHub Gist) ================= */
+const SYNC_KEYS = BACKUP_KEYS.filter(k => k !== 'vf_api_key'); // API 키는 보안상 제외
+const GIST_FILE = 'youlab-sync.json';
+let syncTimer = null;
+function deviceId() {
+  let d = localStorage.getItem('vf_device');
+  if (!d) { d = 'dev-' + Math.random().toString(36).slice(2, 10); localStorage.setItem('vf_device', d); }
+  return d;
+}
+function gistHeaders() {
+  return {'Authorization': 'Bearer ' + localStorage.getItem('vf_gist_token'), 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json'};
+}
+function syncBundle() {
+  const data = {__app: 'DIRECTOR YOU LAB', __t: Date.now(), __device: deviceId()};
+  SYNC_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v != null) data[k] = v; });
+  return data;
+}
+async function connectSync() {
+  const tk = $('gistToken').value.trim();
+  const msg = $('syncMsg');
+  if (!tk) { msg.innerHTML = '<span style="color:var(--red)">토큰을 붙여넣어 주세요</span>'; return; }
+  msg.innerHTML = '연결 확인 중...';
+  try {
+    localStorage.setItem('vf_gist_token', tk);
+    const r0 = await fetch('https://api.github.com/gists?per_page=100', {headers: gistHeaders()});
+    if (!r0.ok) throw new Error('토큰이 올바르지 않거나 gist 권한이 없습니다 (classic 토큰 + gist 권한 필요)');
+    const list = await r0.json();
+    let g = (list || []).find(x => x.files && x.files[GIST_FILE]);
+    if (!g) {
+      const r1 = await fetch('https://api.github.com/gists', {method: 'POST', headers: gistHeaders(),
+        body: JSON.stringify({description: 'DIRECTOR YOU LAB 동기화 데이터', public: false, files: {[GIST_FILE]: {content: JSON.stringify(syncBundle())}}})});
+      if (!r1.ok) throw new Error('저장소 생성 실패 — 토큰에 gist 권한이 있는지 확인해 주세요');
+      g = await r1.json();
+      localStorage.setItem('vf_sync_last', String(Date.now()));
+    }
+    localStorage.setItem('vf_gist_id', g.id);
+    msg.innerHTML = '<span style="color:var(--green-soft)">✓ 연결 완료! 이제 이 기기의 데이터가 자동으로 동기화됩니다.</span>';
+    renderSyncUI();
+    await syncPull(false); // 다른 기기 데이터가 더 최신이면 내려받기
+  } catch(e) {
+    localStorage.removeItem('vf_gist_token');
+    msg.innerHTML = `<span style="color:var(--red)">✗ ${esc(e.message)}</span>`;
+  }
+}
+function disconnectSync() {
+  ['vf_gist_token', 'vf_gist_id'].forEach(k => localStorage.removeItem(k));
+  renderSyncUI();
+  toast('동기화 연결을 해제했습니다 (데이터는 그대로 유지됩니다)');
+}
+function renderSyncUI() {
+  const on = !!(localStorage.getItem('vf_gist_token') && localStorage.getItem('vf_gist_id'));
+  if ($('syncOff')) $('syncOff').style.display = on ? 'none' : '';
+  if ($('syncOn')) $('syncOn').style.display = on ? '' : 'none';
+  if (on && $('syncLast')) {
+    const t = +localStorage.getItem('vf_sync_last') || 0;
+    $('syncLast').textContent = t ? fmtDT(new Date(t).toISOString()) : '아직 없음';
+  }
+}
+function scheduleSync() {
+  if (!localStorage.getItem('vf_gist_id')) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => syncPush(false), 30000);
+}
+async function syncPush(manual) {
+  const id = localStorage.getItem('vf_gist_id');
+  if (!id) { if (manual) toast('먼저 동기화를 연결해 주세요'); return; }
+  try {
+    const bundle = syncBundle();
+    const r = await fetch('https://api.github.com/gists/' + id, {method: 'PATCH', headers: gistHeaders(),
+      body: JSON.stringify({files: {[GIST_FILE]: {content: JSON.stringify(bundle)}}})});
+    if (!r.ok) throw new Error('업로드 실패 (' + r.status + ')');
+    localStorage.setItem('vf_sync_last', String(bundle.__t));
+    localStorage.setItem('vf_sync_seen', String(bundle.__t));
+    renderSyncUI();
+    if (manual) toast('⬆ 동기화 데이터를 올렸습니다');
+  } catch(e) { if (manual) toast('⚠️ ' + e.message); }
+}
+async function syncPull(manual) {
+  const id = localStorage.getItem('vf_gist_id');
+  if (!id) { if (manual) toast('먼저 동기화를 연결해 주세요'); return; }
+  try {
+    const r = await fetch('https://api.github.com/gists/' + id, {headers: gistHeaders()});
+    if (!r.ok) throw new Error('불러오기 실패 (' + r.status + ')');
+    const g = await r.json();
+    const f = g.files && g.files[GIST_FILE];
+    if (!f) throw new Error('동기화 파일을 찾을 수 없습니다');
+    let content = f.content;
+    if (f.truncated) content = await fetch(f.raw_url).then(x => x.text());
+    const data = JSON.parse(content);
+    if (data.__app !== 'DIRECTOR YOU LAB') throw new Error('동기화 데이터 형식이 올바르지 않습니다');
+    const seen = +localStorage.getItem('vf_sync_seen') || 0;
+    if (data.__device === deviceId() || !(data.__t > seen)) { if (manual) toast('이미 최신 상태입니다'); return; }
+    SYNC_KEYS.forEach(k => { if (data[k] != null) localStorage.setItem(k, data[k]); });
+    localStorage.setItem('vf_sync_seen', String(data.__t));
+    localStorage.setItem('vf_sync_last', String(data.__t));
+    toast('⬇ 다른 기기의 데이터를 불러왔습니다. 새로고침합니다');
+    setTimeout(() => location.reload(), 900);
+  } catch(e) { if (manual) toast('⚠️ ' + e.message); }
+}
+
 /* ================= 탭 & 설정 ================= */
 function switchTab(tab) {
   document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
@@ -2957,6 +3088,8 @@ try {
   }
 } catch(e) {}
 $('quotaUsed').textContent = fmt(getQuota());
+// 기기 간 동기화: 시작 시 다른 기기의 최신 데이터 확인
+setTimeout(() => syncPull(false), 1500);
 // 수집한 영상 자동 추적 (앱이 열려 있는 동안 1시간마다)
 setTimeout(() => refreshSavedStats(), 2500);
 setInterval(() => refreshSavedStats(), 3600000);
