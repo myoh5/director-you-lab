@@ -29,7 +29,7 @@
   .logo b{color:var(--green)}
   .logo small{font-size:10px;font-weight:400;color:var(--text-faint);margin-left:6px;letter-spacing:0}
   nav{display:flex;gap:4px;flex-wrap:wrap}
-  nav button{padding:9px 14px;border-radius:8px;color:var(--text-dim);font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+  nav button{padding:9px 14px;border-radius:8px;color:var(--text-dim);font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap}
   nav button:hover{background:var(--panel2);color:var(--text)}
   nav button.active{color:var(--green);border-bottom:2px solid var(--green);border-radius:8px 8px 0 0}
   .hdr-right{display:flex;align-items:center;gap:10px}
@@ -56,7 +56,7 @@
   /* ---------- toolbar ---------- */
   .toolbar{display:flex;justify-content:space-between;align-items:center;margin:6px 0 10px;flex-wrap:wrap;gap:8px}
   .toolbar .left,.toolbar .right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .tbtn{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 13px;font-size:13px;font-weight:600;color:var(--text-dim);display:flex;align-items:center;gap:6px}
+  .tbtn{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 13px;font-size:13px;font-weight:600;color:var(--text-dim);display:flex;align-items:center;gap:6px;white-space:nowrap}
   .tbtn:hover{border-color:var(--green);color:var(--text)}
   .tbtn.primary{background:var(--green);border-color:var(--green);color:#04120a}
   .tbtn.primary:hover{background:var(--green-soft)}
@@ -146,6 +146,30 @@
   .rm-btn{color:var(--text-faint);font-size:15px;padding:4px 8px;border-radius:6px}
   .rm-btn:hover{color:var(--red);background:var(--panel2)}
   @media (max-width:900px){ .vtitle{max-width:230px} main{padding:14px 10px 60px} header{padding:10px 12px} }
+
+  /* ---------- mobile responsive (v4.7) ---------- */
+  @media (max-width:820px){
+    header{flex-wrap:wrap;row-gap:8px;padding:10px 12px}
+    .logo{font-size:16px;order:1;flex:1 1 auto;min-width:0}
+    .logo small{display:none}
+    .hdr-right{order:2;gap:6px;flex:none;margin-left:auto}
+    .quota-chip{font-size:11px;padding:5px 9px;white-space:nowrap}
+    .gear-btn{font-size:15px;padding:5px 7px}
+    .hdr-right .tbtn{padding:6px 9px;font-size:12px;white-space:nowrap}
+    nav{order:3;width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:2px;scrollbar-width:none;margin:0 -4px;padding:0 4px}
+    nav::-webkit-scrollbar{display:none}
+    nav button{flex:none;padding:8px 11px;font-size:13.5px}
+    .searchbar .kw{min-width:0;width:100%;max-width:none;flex:1 1 100%}
+    .filters{width:100%}
+    .filters select{flex:1;min-width:0}
+    .modal{padding:22px 16px}
+    .ch-head{flex-direction:column;text-align:center;gap:10px}
+    .ch-head .ds{max-width:none}
+    .dboxes{grid-template-columns:1fr!important}
+    .stat .val{font-size:19px}
+    .toolbar .left,.toolbar .right{width:100%}
+    .empty{padding:46px 12px}
+  }
 
   /* ---------- Worst 등급 & 라이트 테마 ---------- */
   :root{--normal-col:#cbd5d1}
@@ -763,8 +787,9 @@
 <script>
 "use strict";
 /* ================= 버전 & 업데이트 내역 ================= */
-const APP_VERSION = '4.6';
+const APP_VERSION = '4.7';
 const CHANGELOG = [
+  {v:'4.7', d:'2026.07.30', t:['📱 모바일 반응형 수정 — 폰 화면에서 상단 메뉴가 세로로 깨지던 문제 해결: 로고+사용량은 첫 줄, 메뉴는 좌우로 스크롤되는 한 줄 바로 정리','검색창·필터·통계 카드·채널 헤더·상세 박스도 좁은 화면에 맞게 자동 정렬']},
   {v:'4.6', d:'2026.07.30', t:['☁️ 기기 간 자동 동기화 — GitHub 비공개 Gist를 개인 클라우드로 사용해 수집함·검색 기록·채널 분석 저장을 모든 기기에서 자동으로 이어감 (마이페이지에서 연결)','변경 후 30초 내 자동 업로드, 다른 기기에서 열면 자동 다운로드 · API 키는 보안상 동기화 제외(기기마다 1회 입력)']},
   {v:'4.5', d:'2026.07.30', t:['등록 채널 칩에 💾 표시 — 저장된 분석이 있어 무료로 열리는 채널을 한눈에 구분','저장 데이터가 없는 채널은 안내 문구가 명확해지고, 취소 시 직전에 보던 분석 화면을 자동 복원','구버전에서 분석했던 마지막 채널 데이터를 새 저장소로 자동 이관']},
   {v:'4.4', d:'2026.07.30', t:['채널 분석 저장 기능 — 분석한 채널(최대 10개)은 저장되어, 등록 채널 칩을 클릭하면 사용량 차감 없이 즉시 표시','저장된 분석에는 기준 시각이 표시되고 🔄 최신화 버튼을 눌렀을 때만 사용량(약 4)이 차감','채널 찾기·상세 창의 [채널 분석] 버튼도 저장된 데이터가 있으면 재조회 없이 바로 열림']},
